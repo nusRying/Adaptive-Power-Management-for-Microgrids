@@ -1,0 +1,11 @@
+training:
+  algorithm: sac
+  total_timesteps: 200000
+  learning_rate: 0.0003
+  batch_size: 256
+  buffer_size: 200000
+  gamma: 0.99
+  tau: 0.005
+  model_dir: models
+  tensorboard_log: runs
+

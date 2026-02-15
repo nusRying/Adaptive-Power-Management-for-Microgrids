@@ -1,0 +1,5 @@
+data_splits:
+  train_profile_csv: data/processed/profiles_train.csv
+  val_profile_csv: data/processed/profiles_val.csv
+  test_profile_csv: data/processed/profiles_test.csv
+

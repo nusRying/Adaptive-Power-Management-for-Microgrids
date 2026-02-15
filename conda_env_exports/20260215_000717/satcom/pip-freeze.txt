@@ -1,0 +1,24 @@
+﻿colorama==0.4.6
+contourpy==1.3.3
+cycler==0.12.1
+flake8==7.3.0
+fonttools==4.61.1
+iniconfig==2.3.0
+kiwisolver==1.4.9
+matplotlib==3.10.8
+mccabe==0.7.0
+numpy==2.4.2
+packaging @ file:///C:/miniconda3/conda-bld/packaging_1761049096285/work
+pandas==3.0.0
+pillow==12.1.1
+pluggy==1.6.0
+pycodestyle==2.14.0
+pyflakes==3.4.0
+Pygments==2.19.2
+pyparsing==3.3.2
+pytest==9.0.2
+python-dateutil==2.9.0.post0
+scipy==1.17.0
+six==1.17.0
+tzdata==2025.3
+

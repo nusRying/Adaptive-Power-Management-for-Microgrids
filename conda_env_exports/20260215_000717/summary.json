@@ -1,0 +1,20 @@
+﻿[
+    {
+        "name":  "base",
+        "path":  "C:\\ProgramData\\anaconda3",
+        "folder":  "C:\\Users\\umair\\Videos\\Adaptive Power Management for Microgrids\\conda_env_exports\\20260215_000717\\base",
+        "pip_freeze":  "ok"
+    },
+    {
+        "name":  "comp_vision",
+        "path":  "C:\\Users\\umair\\.conda\\envs\\comp_vision",
+        "folder":  "C:\\Users\\umair\\Videos\\Adaptive Power Management for Microgrids\\conda_env_exports\\20260215_000717\\comp_vision",
+        "pip_freeze":  "ok"
+    },
+    {
+        "name":  "satcom",
+        "path":  "C:\\Users\\umair\\.conda\\envs\\satcom",
+        "folder":  "C:\\Users\\umair\\Videos\\Adaptive Power Management for Microgrids\\conda_env_exports\\20260215_000717\\satcom",
+        "pip_freeze":  "ok"
+    }
+]
