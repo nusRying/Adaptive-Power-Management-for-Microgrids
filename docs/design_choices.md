@@ -17,16 +17,17 @@ Tradeoff:
 
 ## 2. Why Continuous Action Space
 Choice:
-- Battery and grid setpoints are continuous, not discrete.
+- Battery setpoint is continuous, not discrete.
+- Grid setpoint is auto-balanced by the environment from residual demand.
 
 Reason:
 - Power electronics setpoints are inherently continuous.
 - Discretization introduces quantization error and larger action spaces.
-- Continuous control aligns with SAC/DDPG.
+- Battery-only action reduces policy search space and improves training stability.
 
 Tradeoff:
-- Harder optimization than discrete-action Q-learning.
-- Addressed by using actor-critic algorithms designed for continuous spaces.
+- Less direct policy control over explicit import/export decisions.
+- Addressed by deterministic residual grid balancing and still using actor-critic algorithms for battery control.
 
 ## 3. Why This State Vector
 Current observation:
@@ -145,11 +146,12 @@ Tradeoff:
 
 ## 12. Why This Initial Scope (Single-Agent)
 Choice:
-- Single agent controls battery and grid setpoints together.
+- Single agent controls battery setpoint only; grid flow is solved by residual balance.
 
 Reason:
 - Lower complexity and faster convergence for initial baseline.
 - Easier debugging of reward and constraints.
+- Avoids degenerate co-optimization where policy issues conflicting battery/grid commands.
 
 Tradeoff:
 - Does not model decentralized coordination.

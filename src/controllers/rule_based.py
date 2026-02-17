@@ -20,6 +20,8 @@ class RuleBasedPolicyConfig:
 class RuleBasedController:
     """
     Heuristic baseline for cost-aware dispatch.
+
+    Returns battery command only. Grid is auto-balanced by the environment.
     """
 
     def __init__(
@@ -41,7 +43,6 @@ class RuleBasedController:
         price_now = float(obs[6])
 
         b = self.cfg.battery
-        g = self.cfg.grid
         p = self.policy
 
         net_excess = max(0.0, renewable_now - load_now)
@@ -63,8 +64,4 @@ class RuleBasedController:
             # Opportunistic charging in low-price periods.
             battery_cmd_kw = -min(b.max_charge_kw * p.low_price_charge_fraction, g.max_import_kw)
 
-        balance_gap_kw = load_now - renewable_now - battery_cmd_kw
-        grid_cmd_kw = float(np.clip(balance_gap_kw, -g.max_export_kw, g.max_import_kw))
-
-        return np.array([battery_cmd_kw, grid_cmd_kw], dtype=np.float32)
-
+        return np.array([battery_cmd_kw], dtype=np.float32)

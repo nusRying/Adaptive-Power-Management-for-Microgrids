@@ -27,8 +27,11 @@ class SafetySupervisor:
         original = safe.copy()
         reasons: list[str] = []
 
-        if safe.size != 2:
-            raise ValueError("Expected action shape (2,) -> [battery_kw, grid_kw].")
+        if safe.size not in (1, 2):
+            raise ValueError(
+                "Expected action shape (1,) -> [battery_kw]. "
+                "Legacy (2,) -> [battery_kw, grid_kw] is also supported."
+            )
         if observation.size < 6:
             raise ValueError("Observation must include SoC and battery temperature.")
 
@@ -38,7 +41,8 @@ class SafetySupervisor:
         g = self.cfg.grid
 
         safe[0] = float(np.clip(safe[0], -b.max_charge_kw, b.max_discharge_kw))
-        safe[1] = float(np.clip(safe[1], -g.max_export_kw, g.max_import_kw))
+        if safe.size == 2:
+            safe[1] = float(np.clip(safe[1], -g.max_export_kw, g.max_import_kw))
 
         # SoC guard rails.
         if soc <= b.soc_min + 0.01 and safe[0] > 0.0:
@@ -56,4 +60,3 @@ class SafetySupervisor:
         overridden = not np.allclose(original, safe, atol=1e-6)
         reason = ",".join(reasons) if reasons else "none"
         return SafetyDecision(action=safe, overridden=overridden, reason=reason)
-

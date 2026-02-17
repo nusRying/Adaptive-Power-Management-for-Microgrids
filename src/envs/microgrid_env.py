@@ -16,7 +16,7 @@ class MicrogridEnv(gym.Env):
 
     Action:
     - action[0]: battery power command in kW (+ discharge, - charge)
-    - action[1]: grid power command in kW (+ import, - export)
+    Grid power is auto-balanced by the environment from the residual demand.
 
     Observation:
     - [renew_now, renew_forecast, load_now, load_forecast, soc, temp_c, price_now, price_forecast]
@@ -34,14 +34,12 @@ class MicrogridEnv(gym.Env):
             low=np.array(
                 [
                     -self.cfg.battery.max_charge_kw,
-                    -self.cfg.grid.max_export_kw,
                 ],
                 dtype=np.float32,
             ),
             high=np.array(
                 [
                     self.cfg.battery.max_discharge_kw,
-                    self.cfg.grid.max_import_kw,
                 ],
                 dtype=np.float32,
             ),
@@ -133,8 +131,11 @@ class MicrogridEnv(gym.Env):
         assert self._profiles is not None
 
         action = np.asarray(action, dtype=np.float32).reshape(-1)
-        if action.size != 2:
-            raise ValueError("Action must have exactly 2 values: [battery_kw, grid_kw].")
+        if action.size not in (1, 2):
+            raise ValueError(
+                "Action must have 1 value [battery_kw]. "
+                "Legacy [battery_kw, grid_kw] is accepted and second value is ignored."
+            )
 
         idx = self._t
         renewable_kw = self._value_at(self._profiles.renewable_kw, idx)
@@ -143,10 +144,13 @@ class MicrogridEnv(gym.Env):
         price_export = self._value_at(self._profiles.price_export_per_kwh, idx)
 
         battery_cmd_kw = float(action[0])
-        grid_cmd_kw = float(
-            np.clip(action[1], -self.cfg.grid.max_export_kw, self.cfg.grid.max_import_kw)
-        )
         battery_kw, clipped_energy_kwh = self._apply_battery_constraints(battery_cmd_kw)
+
+        # Grid follows the residual demand after renewable and battery dispatch.
+        balance_gap_kw = load_kw - renewable_kw - battery_kw
+        grid_cmd_kw = float(
+            np.clip(balance_gap_kw, -self.cfg.grid.max_export_kw, self.cfg.grid.max_import_kw)
+        )
 
         # Net positive means oversupply, net negative means deficit.
         net_balance_kw = renewable_kw + battery_kw + grid_cmd_kw - load_kw

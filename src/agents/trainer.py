@@ -28,6 +28,7 @@ def train(
     training_config_path: str | Path = "configs/training.yaml",
     override_algo: str | None = None,
     profile_csv_override: str | None = None,
+    resume_model_path: str | Path | None = None,
 ) -> Path:
     algo_map, monitor_cls = _import_rl_dependencies()
 
@@ -44,19 +45,36 @@ def train(
     env = monitor_cls(MicrogridEnv(microgrid_cfg))
 
     model_cls = algo_map[algo_name]
-    model = model_cls(
-        policy="MlpPolicy",
-        env=env,
-        learning_rate=train_cfg.learning_rate,
-        batch_size=train_cfg.batch_size,
-        buffer_size=train_cfg.buffer_size,
-        gamma=train_cfg.gamma,
-        tau=train_cfg.tau,
-        tensorboard_log=train_cfg.tensorboard_log,
-        verbose=1,
-    )
+    if resume_model_path:
+        resume_path = Path(resume_model_path)
+        if not resume_path.exists():
+            raise ValueError(f"Resume model path not found: {resume_path}")
+        model = model_cls.load(
+            str(resume_path),
+            env=env,
+            tensorboard_log=train_cfg.tensorboard_log,
+            verbose=1,
+        )
+        reset_num_timesteps = False
+    else:
+        model = model_cls(
+            policy="MlpPolicy",
+            env=env,
+            learning_rate=train_cfg.learning_rate,
+            batch_size=train_cfg.batch_size,
+            buffer_size=train_cfg.buffer_size,
+            gamma=train_cfg.gamma,
+            tau=train_cfg.tau,
+            tensorboard_log=train_cfg.tensorboard_log,
+            verbose=1,
+        )
+        reset_num_timesteps = True
 
-    model.learn(total_timesteps=train_cfg.total_timesteps, progress_bar=False)
+    model.learn(
+        total_timesteps=train_cfg.total_timesteps,
+        progress_bar=False,
+        reset_num_timesteps=reset_num_timesteps,
+    )
 
     model_dir = Path(train_cfg.model_dir)
     model_dir.mkdir(parents=True, exist_ok=True)
@@ -99,6 +117,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="Explicit profile CSV path override (takes precedence over --split).",
     )
+    parser.add_argument(
+        "--resume-model-path",
+        default=None,
+        help=(
+            "Optional checkpoint path to continue training from. "
+            "When set, timestep counter is continued (no reset)."
+        ),
+    )
     return parser
 
 
@@ -116,6 +142,7 @@ def main() -> None:
         training_config_path=args.training_config,
         override_algo=args.algo,
         profile_csv_override=profile_csv_override,
+        resume_model_path=args.resume_model_path,
     )
     print(f"Training complete. Model saved to: {model_path}")
 

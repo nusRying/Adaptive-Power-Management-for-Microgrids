@@ -11,7 +11,7 @@ This maps each project file to its role in the pipeline.
 - Excludes caches, virtual environments, artifacts (`models/`, `runs/`, etc.).
 
 `requirements.txt`
-- Dependency manifest only (installation is intentionally deferred).
+- Dependency manifest with compatibility pins for project runtime.
 
 ## Configuration
 
@@ -19,8 +19,23 @@ This maps each project file to its role in the pipeline.
 - Environment, battery, grid, and reward parameters.
 - Governs simulation dynamics and cost weighting.
 
+`configs/microgrid.tuned.yaml`
+- Optional tuned reward/degradation config used in iterative training experiments.
+
 `configs/training.yaml`
 - RL training hyperparameters and output locations.
+
+`configs/training.quickstart.yaml`
+- Fast-start SAC config for short bootstrap runs.
+
+`configs/training.resume10k.yaml`
+- 10k-step continuation config for checkpoint extension.
+
+`configs/training.tuned.yaml`
+- Tuned training output paths for experimental runs.
+
+`configs/training.battery_only_20k.yaml`
+- 20k-step SAC config aligned to the battery-only action interface.
 
 `configs/data_splits.yaml`
 - Central mapping for `train`/`val`/`test` profile CSV paths.
@@ -58,6 +73,7 @@ This maps each project file to its role in the pipeline.
 
 `src/agents/trainer.py`
 - RL training entrypoint and algorithm selection (`SAC`, `DDPG`).
+- Supports checkpoint continuation via `--resume-model-path`.
 
 ### Data Utilities
 
@@ -81,10 +97,12 @@ This maps each project file to its role in the pipeline.
 `src/envs/microgrid_env.py`
 - Core Gymnasium environment:
   - state construction,
-  - action handling,
+  - battery-only action handling,
+  - residual grid auto-balancing,
   - battery constraints,
   - reward and info computation,
   - episode transitions.
+- Backward compatibility: legacy 2D actions are accepted and grid dimension is ignored.
 
 ### Controllers
 
@@ -93,6 +111,7 @@ This maps each project file to its role in the pipeline.
 
 `src/controllers/rule_based.py`
 - Rule-based baseline controller for benchmark comparison.
+- Outputs battery command only (grid is handled by environment residual balance).
 
 ### Safety
 
@@ -100,7 +119,8 @@ This maps each project file to its role in the pipeline.
 - Safety package marker.
 
 `src/safety/supervisor.py`
-- Hard safety projection layer for SoC/temperature and power bounds.
+- Hard safety projection layer for SoC/temperature and battery power bounds.
+- Accepts legacy 2D actions for compatibility.
 
 ### Integration
 
@@ -150,7 +170,7 @@ This maps each project file to its role in the pipeline.
 ## Tests
 
 `tests/test_env_smoke.py`
-- Smoke test validating environment reset/step loop and output shapes/types.
+- Smoke tests for environment reset/step loop and legacy 2D action compatibility.
 
 `tests/test_data_validation.py`
 - Validation checks for profile schema and data constraints.
@@ -159,7 +179,7 @@ This maps each project file to its role in the pipeline.
 - Split logic checks for expected partition sizes.
 
 `tests/test_rule_based_controller.py`
-- Baseline controller action and behavior checks.
+- Baseline controller action and behavior checks (battery-only action output).
 
 `tests/test_evaluation_smoke.py`
 - End-to-end evaluation smoke test.
@@ -180,6 +200,9 @@ This maps each project file to its role in the pipeline.
 
 `docs/pipeline.md`
 - End-to-end flow from data to control dispatch.
+
+`docs/training_workflow.md`
+- Practical runbook for data prep, block-wise training, and validation/test promotion.
 
 `docs/math.md`
 - Mathematical formulation and equations used by current implementation.

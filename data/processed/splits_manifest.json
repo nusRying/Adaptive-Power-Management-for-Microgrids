@@ -1,0 +1,17 @@
+{
+  "input": "data/raw/profiles.csv",
+  "output_dir": "data/processed",
+  "train_ratio": 0.7,
+  "val_ratio": 0.15,
+  "test_ratio": 0.15,
+  "rows": {
+    "train": 8064,
+    "val": 1728,
+    "test": 1728
+  },
+  "files": {
+    "train": "data\\processed\\profiles_train.csv",
+    "val": "data\\processed\\profiles_val.csv",
+    "test": "data\\processed\\profiles_test.csv"
+  }
+}

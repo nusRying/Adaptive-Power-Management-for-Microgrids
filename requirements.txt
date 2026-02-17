@@ -1,5 +1,5 @@
 # Core numerics and data
-numpy>=1.26
+numpy>=1.26,<2.0
 pandas>=2.2
 scipy>=1.12
 matplotlib>=3.8
@@ -13,8 +13,7 @@ torch>=2.2
 
 # Microgrid / power system simulation
 pymgrid>=1.0
-pandapower>=2.14
+pandapower>=2.14,<3.0
 
 # Hardware communication
 pymodbus>=3.6
-

@@ -1,0 +1,27 @@
+﻿environment:
+  episode_horizon: 96
+  time_step_hours: 0.25
+  seed: 42
+  profile_csv: data/raw/profiles.csv
+
+battery:
+  capacity_kwh: 150.0
+  soc_init: 0.5
+  soc_min: 0.1
+  soc_max: 0.9
+  max_charge_kw: 75.0
+  max_discharge_kw: 75.0
+  charge_efficiency: 0.95
+  discharge_efficiency: 0.95
+  temperature_c: 30.0
+  degradation_cost_per_kwh: 0.08
+
+grid:
+  max_import_kw: 250.0
+  max_export_kw: 150.0
+  sell_price_factor: 0.8
+
+reward:
+  unmet_load_penalty_per_kwh: 15.0
+  export_curtail_penalty_per_kwh: 2.0
+

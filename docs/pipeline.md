@@ -4,8 +4,9 @@
 Control a grid-tied microgrid in discrete time to minimize operating cost while respecting battery and grid constraints.
 
 At each time step the controller decides:
-- battery charge/discharge power,
-- grid import/export power.
+- battery charge/discharge power.
+
+Grid import/export is auto-balanced inside the environment from residual demand after renewable and battery dispatch.
 
 The pipeline is implemented so an RL policy can learn this control by interaction.
 
@@ -29,7 +30,7 @@ Control loop per step:
 1. Read current observation from environment.
 2. RL policy (or random policy for sanity check) outputs continuous action.
 3. Safety supervisor clips or blocks unsafe action.
-4. Environment applies battery and grid constraints.
+4. Environment applies battery constraints and auto-balances grid power.
 5. Environment computes power balance, cost terms, reward, next state.
 6. RL trainer stores transition and updates policy/value networks.
 
@@ -80,18 +81,19 @@ On `reset()`:
 
 ### 5.2 Step
 On `step(action)`:
-1. Parse action as `[battery_kw, grid_kw]`.
-2. Clip grid action to import/export limits.
+1. Parse action as `[battery_kw]`.
+2. Legacy `[battery_kw, grid_kw]` format is accepted for compatibility; the grid term is ignored.
 3. Apply battery limits:
    - power limits,
    - SoC limits through feasible energy in current interval,
    - charge/discharge efficiencies.
-4. Compute net power balance.
-5. Convert imbalance into unmet-load and curtailment terms.
-6. Compute grid cost, degradation cost, and penalties.
-7. Compute reward as negative total cost.
-8. Update temperature proxy.
-9. Advance time and return next observation and diagnostics.
+4. Compute residual balance and auto-set grid power by clipping to import/export limits.
+5. Compute net power balance.
+6. Convert imbalance into unmet-load and curtailment terms.
+7. Compute grid cost, degradation cost, and penalties.
+8. Compute reward as negative total cost.
+9. Update temperature proxy.
+10. Advance time and return next observation and diagnostics.
 
 ## 6. Training Pipeline
 Implemented in `src/agents/trainer.py`.
@@ -108,8 +110,12 @@ Implemented in `src/agents/trainer.py`.
 6. Train for `total_timesteps`.
 7. Save model to `model_dir`.
 
+Optional continuation:
+- pass `--resume-model-path <checkpoint.zip>` to continue training from an existing model.
+- timestep counter is continued (no reset) when resuming.
+
 Output artifact:
-- `models/sac_microgrid_agent` or `models/ddpg_microgrid_agent`
+- `<model_dir>/sac_microgrid_agent` or `<model_dir>/ddpg_microgrid_agent`
 
 ## 6.1 Baseline and RL Evaluation
 Implemented in `src/controllers/rule_based.py`, `src/evaluation/runner.py`, `src/evaluation/comparison.py`, `scripts/evaluate_policy.py`, `scripts/benchmark_policies.py`, and `scripts/compare_baseline_vs_rl.py`.
@@ -141,7 +147,7 @@ Input:
 - observation containing `soc` and `temperature_c`.
 
 Checks:
-1. Power clipping for battery and grid commands.
+1. Power clipping for battery command.
 2. Block discharge near minimum SoC.
 3. Block charge near maximum SoC.
 4. Block any battery action at high temperature threshold.

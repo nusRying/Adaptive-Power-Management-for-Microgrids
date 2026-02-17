@@ -8,11 +8,10 @@ This document formalizes the current implementation in `src/envs/microgrid_env.p
 - Renewable power: `P_ren(t)` [kW]
 - Load power: `P_load(t)` [kW]
 - Battery command from policy: `u_b(t)` [kW]
-- Grid command from policy: `u_g(t)` [kW]
 - Realized battery power after constraints: `P_b(t)` [kW]
   - `P_b > 0`: discharging battery to serve bus
   - `P_b < 0`: charging battery from bus
-- Realized grid power after clipping: `P_g(t)` [kW]
+- Realized grid power after residual balancing and clipping: `P_g(t)` [kW]
   - `P_g > 0`: importing from utility
   - `P_g < 0`: exporting to utility
 - State of charge: `SOC(t)` in `[SOC_min, SOC_max]`
@@ -25,7 +24,7 @@ State vector in code (`obs`):
 `s_t = [P_ren(t), P_ren(t+1), P_load(t), P_load(t+1), SOC(t), Temp(t), c_imp(t), c_imp(t+1)]`
 
 Action vector in code:
-`a_t = [u_b(t), u_g(t)]`
+`a_t = [u_b(t)]`
 
 Transition:
 - Deterministic given action and profile sequence, except stochasticity from profile generation/selection.
@@ -37,7 +36,6 @@ Reward:
 ## 3. Action Bounds
 Before environment physics:
 - `u_b(t) in [-P_ch_max, P_dis_max]`
-- `u_g(t) in [-P_exp_max, P_imp_max]`
 
 where:
 - `P_ch_max = battery.max_charge_kw`
@@ -80,6 +78,11 @@ Energy not honored from requested battery command:
 This term is penalized in reward to discourage infeasible commands.
 
 ## 5. Power Balance
+Grid command is environment-derived from residual demand:
+`P_g_raw(t) = P_load(t) - P_ren(t) - P_b(t)`
+
+`P_g(t) = clip(P_g_raw(t), -P_exp_max, P_imp_max)`
+
 Bus net balance:
 `P_bal(t) = P_ren(t) + P_b(t) + P_g(t) - P_load(t)`
 
@@ -150,7 +153,7 @@ Export tariff:
 Training API is in `src/agents/trainer.py` and uses Stable-Baselines3 implementations.
 
 ### 9.1 Why actor-critic continuous control
-Action is continuous and bounded in 2D. Policy gradient actor-critic methods are standard for this regime.
+Action is continuous and bounded in 1D (battery command). Policy gradient actor-critic methods are standard for this regime.
 
 ### 9.2 SAC objective (conceptual)
 SAC maximizes:
@@ -168,12 +171,15 @@ DDPG uses deterministic policy `mu_theta(s)` and critic `Q_phi(s,a)`:
 
 ## 10. Safety Layer Math
 Safety supervisor (`src/safety/supervisor.py`) applies:
-- hard clipping to power limits,
+- hard clipping to battery power limits,
 - SoC threshold rules:
   - if `SOC <= SOC_min + 0.01`, forbid discharge,
   - if `SOC >= SOC_max - 0.01`, forbid charge,
 - thermal rule:
   - if `Temp >= 48`, force `P_b = 0`.
+
+Backward compatibility:
+- legacy 2D actions are accepted, and only the battery dimension is enforced/used.
 
 This defines a projection:
 `a_safe = Pi_safe(a_raw, s_t)`

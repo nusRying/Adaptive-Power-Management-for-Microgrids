@@ -13,10 +13,9 @@ This repository is structured to support your phased plan:
 4. integration toward converter/PLC control.
 
 ## Current Status
-- Code scaffold is implemented.
-- No dependency installation was performed in setup.
-- No dataset download was performed in setup.
+- Core training/evaluation scaffold is implemented and tested.
 - Synthetic profile fallback is included so you can develop before real data is available.
+- Data validation and chronological split tooling is available for train/val/test workflows.
 
 ## What Is Implemented
 - Custom `Gymnasium` environment for dispatch and cost optimization: `src/envs/microgrid_env.py`
@@ -24,7 +23,7 @@ This repository is structured to support your phased plan:
 - Split-path config for dataset routing: `configs/data_splits.yaml`
 - Data pipeline (CSV or synthetic generator): `src/data/profiles.py`
 - Data validation and split utilities: `src/data/validation.py`, `src/data/splitting.py`
-- RL trainer entrypoint (`SAC` or `DDPG`): `src/agents/trainer.py`
+- RL trainer entrypoint (`SAC` or `DDPG`) with optional checkpoint resume: `src/agents/trainer.py`
 - Hard safety supervisor for SoC, temperature, and power bounds: `src/safety/supervisor.py`
 - Rule-based baseline controller for benchmarking: `src/controllers/rule_based.py`
 - Unified evaluation runner and metrics aggregation: `src/evaluation/runner.py`
@@ -41,6 +40,7 @@ This repository is structured to support your phased plan:
 ## Documentation Map
 - Full docs index: `docs/README.md`
 - End-to-end pipeline: `docs/pipeline.md`
+- Training workflow playbook: `docs/training_workflow.md`
 - Mathematical formulation: `docs/math.md`
 - Design choices and rationale: `docs/design_choices.md`
 - File-by-file reference: `docs/file_reference.md`
@@ -59,6 +59,8 @@ This repository is structured to support your phased plan:
    - `python -m scripts.evaluate_policy --policy baseline --episodes 20`
 7. Start training:
    - `python -m scripts.train_rl --algo sac --split train`
+   - Resume from checkpoint (optional):
+     - `python -m scripts.train_rl --algo sac --split train --resume-model-path models/sac_microgrid_agent.zip`
 8. Evaluate trained RL policy:
    - `python -m scripts.evaluate_policy --policy sac --model-path models/sac_microgrid_agent.zip --split test --episodes 20`
 9. Compare random vs baseline vs RL in one run:
@@ -85,6 +87,11 @@ Template:
 
 ## High-Level Architecture
 `Profiles -> Environment -> RL Policy -> Safety Supervisor -> Dispatch -> (Simulation/Hardware)`
+
+## Control Interface Note
+- Policy action is battery command only (`[battery_kw]`).
+- Grid power is auto-balanced by the environment from residual demand.
+- Legacy 2D actions (`[battery_kw, grid_kw]`) are accepted for backward compatibility and the second term is ignored.
 
 The equations and exact implementation details are documented in:
 - `docs/math.md`
